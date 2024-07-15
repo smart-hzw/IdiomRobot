@@ -1,8 +1,8 @@
 package test
 
 import (
-	"IdiomRobotv/dto"
-	"IdiomRobotv/websocket"
+	"IdiomRobot/dto"
+	"IdiomRobot/websocket"
 	"log"
 	"testing"
 )
