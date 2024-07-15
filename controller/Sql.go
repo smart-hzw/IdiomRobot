@@ -56,9 +56,8 @@ func init() {
 func DataToCache(n int) {
 	//连接数据集
 	db := DB
-	//var excutrSql = "WITH RankedOrders AS (SELECT id,word,`first`,last,`status` ROW_NUMBER() OVER(PARTITION BY last ORDER BY id) AS rn FROM idiom) SELECT id, word, `first` FROM (SELECT * from RankedOrders WHERE `status`!=1 ) as a WHERE rn <= 20;"
 	var sqlString = "WITH RankedOrders AS (SELECT `id`, word, `first`,`status`, ROW_NUMBER() OVER(PARTITION BY `last` ORDER BY `id`) AS rn FROM idiom) SELECT `id`,`word`,`first` FROM (SELECT * from RankedOrders WHERE `status`!=1 )  as a WHERE rn <= ?;"
-	//按结尾读音分类，每个类别取20个放入redis中
+	//按结尾读音分类，每个类别取50个放入redis中
 	//redis的数据结构是，key的格式是{"first"：{"id":"为所欲为","id":"为虎作伥"}}
 	rows, err := db.Query(sqlString, n)
 	if err != nil {

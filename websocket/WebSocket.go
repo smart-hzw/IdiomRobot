@@ -265,6 +265,7 @@ func (c *Client) isHandleBuildIn(payload *dto.PayloadCommon) bool {
 	//	c.closeChan <- errs.ErrNeedReConnect
 	//case WSInvalidSession: // 无效的 sessionLog，需要重新鉴权
 	//	c.closeChan <- errs.ErrInvalidSession
+
 	default:
 		return false
 	}

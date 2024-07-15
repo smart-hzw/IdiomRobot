@@ -39,7 +39,7 @@ func KeyExpireListening(token string) {
 	if err != nil {
 
 	}
-	fmt.Println("===============定时任务", ttl)
+	//fmt.Println("===============定时任务", ttl)
 	if ttl <= 10*time.Second && ttl >= 0 {
 		//设置nextIdiom过期
 		controller.RedisConn.Expire(context.Background(), controller.Prelast, 1*time.Second)
