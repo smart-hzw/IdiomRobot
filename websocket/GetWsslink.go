@@ -1,4 +1,4 @@
-package main
+package websocket
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ type Tokenrequest struct {
 	ClientSecret string `json:"clientSecret"`
 }
 
-func getAccessToken() (*Token, error) {
+func GetAccessToken() (*Token, error) {
 	// 构建鉴权请求的URL和参数（这里简化为POST表单数据，实际可能使用JSON或其他格式）
 	// 注意：这里只是示例，实际URL和参数应根据API文档确定
 	authURL := "https://bots.qq.com/app/getAppAccessToken"
@@ -66,7 +66,7 @@ func getAccessToken() (*Token, error) {
 	return &token, nil
 }
 
-func sendMessageWithAuth(token *Token) (*WssInfo, error) {
+func SendMessageWithAuth(token *Token) (*WssInfo, error) {
 	// 将请求体转换为JSON格式
 	url := "https://sandbox.api.sgroup.qq.com/gateway/bot"
 

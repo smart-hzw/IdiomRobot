@@ -1,4 +1,4 @@
-package main
+package controller
 
 import (
 	"context"
@@ -31,7 +31,7 @@ type IdiomStruct struct {
 
 var i = 0
 var DB *sql.DB
-var redisConn *redis.Client
+var RedisConn *redis.Client
 
 func init() {
 	sqlConn := "root:root@tcp(localhost:3306)/robot?charset=utf8&parseTime=True&loc=Local"
@@ -46,14 +46,14 @@ func init() {
 	}
 	log.Println("mysql conn pool has initiated.")
 
-	redisConn = redis.NewClient(&redis.Options{
+	RedisConn = redis.NewClient(&redis.Options{
 		Addr:     "106.75.237.231:6379", // Redis地址
 		Password: "",                    // 无密码
 		DB:       0,                     // 使用默认DB
 	})
 }
 
-func dataToCache(n int) {
+func DataToCache(n int) {
 	//连接数据集
 	db := DB
 	//var excutrSql = "WITH RankedOrders AS (SELECT id,word,`first`,last,`status` ROW_NUMBER() OVER(PARTITION BY last ORDER BY id) AS rn FROM idiom) SELECT id, word, `first` FROM (SELECT * from RankedOrders WHERE `status`!=1 ) as a WHERE rn <= 20;"
@@ -66,7 +66,7 @@ func dataToCache(n int) {
 	}
 
 	ctx := context.Background()
-	pipe := redisConn.Pipeline()
+	pipe := RedisConn.Pipeline()
 	for rows.Next() {
 		var id int
 		var first string
@@ -86,25 +86,25 @@ func dataToCache(n int) {
 	log.Println("Info=======================数据写入缓存成功")
 }
 
-func searchNextIdiom(preString string) (string, error) {
+func SearchNextIdiom(preString string) (string, error) {
 	//还要处理，多条消息带来的并发问题，要指定消息回复
 	//1. 首先判断传入的字符是否是成语,统一的先去redis中查，再去mysql中查
 	db := DB
-	idiomStruct := selectIdiom(preString)
+	idiomStruct := SelectIdiom(preString)
 	if idiomStruct.Last == "" {
 		return string(NOTIDIOM), nil
 	}
 	//此时该成语已经被用了，先写数据库，再删除缓存
 	upDateStaus(preString)
 	log.Println("Info=======================更新已传递的成语使用状态")
-	result, err := redisConn.SRem(context.Background(), idiomStruct.First, preString).Result()
+	result, err := RedisConn.SRem(context.Background(), idiomStruct.First, preString).Result()
 	if err != nil {
 		log.Printf("Error===========================缓存删除失败： ", err)
 	}
 	log.Printf("Info===========================从缓存删除已遍历的成语： ", result)
 
 	//获取到下一个成语的拼音后，开始去redis中查找，如果redis中有则，返回该结果，先去数据库更改该值状态，再从缓冲中删除
-	pop := redisConn.SPop(context.Background(), idiomStruct.Last)
+	pop := RedisConn.SPop(context.Background(), idiomStruct.Last)
 	s, err := pop.Result()
 	if s != "" {
 
@@ -153,7 +153,7 @@ func upDateStaus(word string) {
 	log.Printf("Info===========================更新语句成功： ", id)
 }
 
-func selectIdiom(word string) IdiomStruct {
+func SelectIdiom(word string) IdiomStruct {
 	db := DB
 	raw, err := db.Query("select `id`,`first` ,`last`from idiom where `word`=?", word)
 	if err != nil {
@@ -172,8 +172,8 @@ func selectIdiom(word string) IdiomStruct {
 	return idiomStruct
 }
 
-func linkComparePre(input string) bool {
-	get := redisConn.Get(context.Background(), Prelast)
+func LinkComparePre(input string) bool {
+	get := RedisConn.Get(context.Background(), Prelast)
 	log.Printf("+++++++++++++++++++++++++++++++", get)
 	var last string
 	err := get.Scan(&last)

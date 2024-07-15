@@ -1,6 +1,7 @@
-package main
+package websocket
 
 import (
+	"IdiomRobot/dto"
 	"encoding/json"
 	"fmt"
 	wss "github.com/gorilla/websocket"
@@ -36,7 +37,7 @@ type Websocket interface {
 	//关闭链接
 	Close() error
 	//wss发送消息
-	WriteMessage(message *PayloadCommon) error
+	WriteMessage(message *dto.PayloadCommon) error
 	//重连
 	Resume() error
 	//获取Session信息
@@ -49,7 +50,7 @@ type Websocket interface {
 //var ClientImpl Websocket
 
 // 要有一个结构体来存储WebSocket对象的数据
-type MessageChan chan *PayloadCommon
+type MessageChan chan *dto.PayloadCommon
 type closeErrorChan chan error
 type Client struct {
 	version         int
@@ -57,7 +58,7 @@ type Client struct {
 	Session         *Session    //存储Session会话信息
 	messageQueue    MessageChan //存储消息链表
 	closeChan       closeErrorChan
-	user            *WSUser
+	user            *dto.WSUser
 	heartBeatTicker *time.Ticker //维持心跳
 }
 
@@ -94,10 +95,10 @@ func (c *Client) LinkWss() error {
 
 func (c *Client) Auth() error {
 	if c.Session.Intent == 0 {
-		c.Session.Intent = IntentGuilds
+		c.Session.Intent = dto.IntentGuilds
 	}
-	data := &IdentityData{
-		Token:   pre + c.Session.Token.AccessToken,
+	data := &dto.IdentityData{
+		Token:   Pre + c.Session.Token.AccessToken,
 		Intents: c.Session.Intent,
 		Shard: []uint32{
 			c.Session.Shards.ShardID,
@@ -106,7 +107,7 @@ func (c *Client) Auth() error {
 			//4,
 		},
 	}
-	payload := &PayloadCommon{
+	payload := &dto.PayloadCommon{
 		CommonData: *data,
 	}
 
@@ -130,8 +131,8 @@ func (c *Client) Listening() error {
 		case <-ticker.C:
 			//发送心跳
 			log.Printf("Info=====================心跳检测开始")
-			heartBeatEvent := &PayloadCommon{
-				PayLoadBase: PayLoadBase{
+			heartBeatEvent := &dto.PayloadCommon{
+				PayLoadBase: dto.PayLoadBase{
 					Op: 1,
 				},
 				CommonData: c.Session.LastSeq,
@@ -156,7 +157,7 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) WriteMessage(message *PayloadCommon) error {
+func (c *Client) WriteMessage(message *dto.PayloadCommon) error {
 	messageJson, _ := json.Marshal(message)
 	log.Printf("Info=====================%v 消息正在发送中", string(messageJson))
 	err := c.Conn.WriteMessage(wss.TextMessage, messageJson)
@@ -169,12 +170,12 @@ func (c *Client) WriteMessage(message *PayloadCommon) error {
 }
 
 func (c *Client) Resume() error {
-	data := &ResumeData{
+	data := &dto.ResumeData{
 		Token:     c.Session.Token.AccessToken,
 		SessionID: c.Session.ID,
 		Seq:       c.Session.LastSeq,
 	}
-	payload := &PayloadCommon{
+	payload := &dto.PayloadCommon{
 		CommonData: *data,
 	}
 	payload.Op = 6
@@ -195,14 +196,14 @@ func (c *Client) readMessageToQueue() {
 			c.closeChan <- err
 			return
 		}
-		payload := &PayloadCommon{}
+		payload := &dto.PayloadCommon{}
 		err = json.Unmarshal(message, payload)
 		if err != nil {
 			log.Printf("Error=====================json解析失败 %v", err)
 			continue
 		}
 		payload.RawMessage = message
-		log.Printf("Info=====================消息数据处理中", c.Session, OPMeans(OPCode(payload.Op)), string(message))
+		log.Printf("Info=====================消息数据处理中", c.Session, dto.OPMeans(dto.OPCode(payload.Op)), string(message))
 		if c.isHandleBuildIn(payload) {
 			continue
 		}
@@ -233,8 +234,8 @@ func (c *Client) listenMessageAndHandle() {
 	log.Printf("Info=====================消息队列关闭", c.Session)
 }
 
-func (c *Client) readyHandler(payload *PayloadCommon) {
-	readyData := &ReadyData{}
+func (c *Client) readyHandler(payload *dto.PayloadCommon) {
+	readyData := &dto.ReadyData{}
 	if err := ParseData(payload.RawMessage, readyData); err != nil {
 		log.Printf("Error=====================Redy数据转换失败 %v")
 	}
@@ -243,7 +244,7 @@ func (c *Client) readyHandler(payload *PayloadCommon) {
 	c.Session.ID = readyData.SessionID
 	c.Session.Shards.ShardID = readyData.Shard[0]
 	c.Session.Shards.ShardCount = readyData.Shard[1]
-	c.user = &WSUser{
+	c.user = &dto.WSUser{
 		ID:       readyData.User.ID,
 		Username: readyData.User.Username,
 		Bot:      readyData.User.Bot,
@@ -255,11 +256,11 @@ func ParseData(message []byte, target interface{}) error {
 	return json.Unmarshal([]byte(data.String()), target)
 }
 
-func (c *Client) isHandleBuildIn(payload *PayloadCommon) bool {
-	switch OPCode(payload.Op) {
-	case WSHello: // 接收到 hello 后需要开始发心跳
+func (c *Client) isHandleBuildIn(payload *dto.PayloadCommon) bool {
+	switch dto.OPCode(payload.Op) {
+	case dto.WSHello: // 接收到 hello 后需要开始发心跳
 		c.startHeartBeatTicker(payload.RawMessage)
-	case WSHeartbeatAck: // 心跳 ack 不需要业务处理
+	case dto.WSHeartbeatAck: // 心跳 ack 不需要业务处理
 	//case WSReconnect: // 达到连接时长，需要重新连接，此时可以通过 resume 续传原连接上的事件
 	//	c.closeChan <- errs.ErrNeedReConnect
 	//case WSInvalidSession: // 无效的 sessionLog，需要重新鉴权
@@ -271,7 +272,7 @@ func (c *Client) isHandleBuildIn(payload *PayloadCommon) bool {
 }
 
 func (c *Client) startHeartBeatTicker(message []byte) {
-	helloData := &HelloData{}
+	helloData := &dto.HelloData{}
 	if err := ParseData(message, helloData); err != nil {
 		log.Printf("Error===================解析Hello数据失败")
 	}

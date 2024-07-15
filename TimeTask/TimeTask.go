@@ -1,6 +1,9 @@
-package main
+package TimeTask
 
 import (
+	"IdiomRobot/controller"
+	"IdiomRobot/dto"
+	"IdiomRobot/websocket"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -16,7 +19,7 @@ func DataUpdateworker() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		dataToCache(5)
+		controller.DataToCache(5)
 	}
 
 }
@@ -32,19 +35,19 @@ func KeyExpireListeningworker(token string) {
 
 // 监听redis中键过期
 func KeyExpireListening(token string) {
-	ttl, err := redisConn.TTL(context.Background(), IdiomSwitch).Result()
+	ttl, err := controller.RedisConn.TTL(context.Background(), controller.IdiomSwitch).Result()
 	if err != nil {
 
 	}
 	fmt.Println("===============定时任务", ttl)
 	if ttl <= 10*time.Second && ttl >= 0 {
 		//设置nextIdiom过期
-		redisConn.Expire(context.Background(), Prelast, 1*time.Second)
-		toCreate := &MessageToCreate{
-			Content: string(TIMEOUT),
+		controller.RedisConn.Expire(context.Background(), controller.Prelast, 1*time.Second)
+		toCreate := &dto.MessageToCreate{
+			Content: string(controller.TIMEOUT),
 			//MsgID:   data.ID,
 		}
-		db := DB
+		db := controller.DB
 		db.Exec("UPDATE idiom SET `status`=0")
 		////发送消息
 		url := "https://sandbox.api.sgroup.qq.com/channels/" + "655698385" + "/messages"
@@ -55,8 +58,8 @@ func KeyExpireListening(token string) {
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 		client := &http.Client{}
 
-		req.Header.Add("Authorization", pre+token)
-		req.Header.Add("X-Union-Appid", AppID)
+		req.Header.Add("Authorization", websocket.Pre+token)
+		req.Header.Add("X-Union-Appid", websocket.AppID)
 		req.Header.Set("Content-Type", "application/json")
 		// 发送请求并获取响应
 		resp, err := client.Do(req)
@@ -65,7 +68,7 @@ func KeyExpireListening(token string) {
 		}
 		body, err := ioutil.ReadAll(resp.Body)
 		fmt.Println("==========================================键过期响应", string(body))
-		var message *Message
+		var message *dto.Message
 		err2 := json.Unmarshal([]byte(body), &message)
 		if err2 != nil {
 			log.Fatalf("解析JSON出错: %v", err2)

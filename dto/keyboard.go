@@ -1,4 +1,4 @@
-package main
+package dto
 
 // ActionType 按钮操作类型
 type ActionType uint32

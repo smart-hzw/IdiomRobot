@@ -1,4 +1,4 @@
-package main
+package dto
 
 // Intent 类型
 type Intent int

@@ -1,4 +1,4 @@
-package main
+package dto
 
 import (
 	"encoding/json"

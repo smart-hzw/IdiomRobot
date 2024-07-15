@@ -1,11 +1,11 @@
-package main
+package dto
 
 const (
 	EventAtMessageCreate   EventType = "AT_MESSAGE_CREATE"
 	EventInteractionCreate EventType = "INTERACTION_CREATE"
 )
 
-var intentEventMap = map[Intent][]EventType{
+var IntentEventMap = map[Intent][]EventType{
 	IntentGuildAtMessage: {EventAtMessageCreate},
 	IntentInteraction:    {EventInteractionCreate},
 }

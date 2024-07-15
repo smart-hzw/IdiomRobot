@@ -1,6 +1,9 @@
-package main
+package websocket
 
-import "log"
+import (
+	"IdiomRobot/dto"
+	"log"
+)
 
 var DefaultHandlers struct {
 	Ready       ReadyHandler
@@ -8,19 +11,19 @@ var DefaultHandlers struct {
 	Interaction InteractionEventHandler
 }
 
-func RegisterHandlers(handlers ...interface{}) Intent {
-	var i Intent
+func RegisterHandlers(handlers ...interface{}) dto.Intent {
+	var i dto.Intent
 	for _, h := range handlers {
 		switch handle := h.(type) {
 		case ReadyHandler:
 			DefaultHandlers.Ready = handle
 		case InteractionEventHandler:
 			DefaultHandlers.Interaction = handle
-			i = i | EventToIntent(EventInteractionCreate)
+			i = i | EventToIntent(dto.EventInteractionCreate)
 		case ATMessageEventHandler:
 			log.Printf("++++++++++++++++++++++++++++解析事件4444", handle)
 			DefaultHandlers.ATMessage = handle
-			i = i | EventToIntent(EventAtMessageCreate)
+			i = i | EventToIntent(dto.EventAtMessageCreate)
 		default:
 		}
 	}
@@ -30,18 +33,18 @@ func RegisterHandlers(handlers ...interface{}) Intent {
 }
 
 // Readyhandler事件处理
-type ReadyHandler func(event *PayloadCommon, data *ReadyData)
+type ReadyHandler func(event *dto.PayloadCommon, data *dto.ReadyData)
 
 // at事件处理
-type ATMessageEventHandler func(event *PayloadCommon, data *ATMessageData) error
+type ATMessageEventHandler func(event *dto.PayloadCommon, data *dto.ATMessageData) error
 
 // 交互事件处理
-type InteractionEventHandler func(event *PayloadCommon, data *WSInteractionData) error
+type InteractionEventHandler func(event *dto.PayloadCommon, data *dto.WSInteractionData) error
 
-var eventIntentMap = transposeIntentEventMap(intentEventMap)
+var eventIntentMap = transposeIntentEventMap(dto.IntentEventMap)
 
-func transposeIntentEventMap(input map[Intent][]EventType) map[EventType]Intent {
-	result := make(map[EventType]Intent)
+func transposeIntentEventMap(input map[dto.Intent][]dto.EventType) map[dto.EventType]dto.Intent {
+	result := make(map[dto.EventType]dto.Intent)
 	for i, eventTypes := range input {
 		for _, s := range eventTypes {
 			result[s] = i
@@ -50,8 +53,8 @@ func transposeIntentEventMap(input map[Intent][]EventType) map[EventType]Intent 
 	return result
 }
 
-func EventToIntent(events ...EventType) Intent {
-	var i Intent
+func EventToIntent(events ...dto.EventType) dto.Intent {
+	var i dto.Intent
 	for _, event := range events {
 		i = i | eventIntentMap[event]
 	}

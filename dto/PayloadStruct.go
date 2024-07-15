@@ -1,4 +1,4 @@
-package main
+package dto
 
 type EventType string
 type PayLoadBase struct {

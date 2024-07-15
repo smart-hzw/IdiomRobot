@@ -1,4 +1,4 @@
-package main
+package dto
 
 // OPCode websocket op 码
 type OPCode int

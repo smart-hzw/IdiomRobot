@@ -1,12 +1,13 @@
-package main
+package websocket
 
 import (
+	"IdiomRobot/dto"
 	"fmt"
 	"log"
 	"time"
 )
 
-var pre = "QQBot "
+var Pre = "QQBot "
 
 // 需要一个绘画链，调用网关/gateway返回的数值
 type WssInfo struct {
@@ -29,7 +30,7 @@ type Session struct {
 	ID      string      `json:"id"`
 	URL     string      `json:"url"`
 	Token   Token       `json:"accessToken"`
-	Intent  Intent      `json:"intent"`
+	Intent  dto.Intent  `json:"intent"`
 	LastSeq uint32      `json:"last_seq"`
 	Shards  ShardConfig `json:"shards"`
 }
@@ -70,7 +71,7 @@ func New() *LinkChanManager {
 }
 
 // Start 启动本地 session manager
-func (linkChan *LinkChanManager) SessionChanStart(wssInfo *WssInfo, token *Token, intents *Intent) error {
+func (linkChan *LinkChanManager) SessionChanStart(wssInfo *WssInfo, token *Token, intents *dto.Intent) error {
 	log.Print("Info=====================开始启动session manager")
 	//检查分片情况
 	if err := CheckSessionLimit(wssInfo); err != nil {
